@@ -2,7 +2,8 @@
 if not AMG_Settings then
     AMG_Settings = {
         recipient = "",
-        percentage = 90
+        percentage = 90,
+        confirmBeforeSending = true  -- Default to true
     }
 end
 
@@ -30,7 +31,6 @@ recipientEditBox:SetPoint("LEFT", recipientLabel, "RIGHT", 10, 0)
 recipientEditBox:SetScript("OnEditFocusLost", function(self)
     AMG_Settings.recipient = self:GetText()
 end)
-recipientEditBox:SetText(AMG_Settings.recipient)
 options.recipientEditBox = recipientEditBox
 
 -- Percentage label
@@ -46,9 +46,11 @@ percentageSlider:SetPoint("LEFT", percentageLabel, "RIGHT", 10, 0)
 percentageSlider:SetMinMaxValues(0, 100)
 percentageSlider:SetValueStep(1)
 percentageSlider:SetObeyStepOnDrag(true)
-percentageSlider:SetValue(AMG_Settings.percentage)
-_G[percentageSlider:GetName() .. 'Low']:SetText('0%')
-_G[percentageSlider:GetName() .. 'High']:SetText('100%')
+percentageSlider:SetScript("OnValueChanged", function(self, value)
+    AMG_Settings.percentage = math.floor(value)
+    _G[self:GetName() .. 'Text']:SetText(AMG_Settings.percentage .. '%')
+    percentageEditBox:SetNumber(AMG_Settings.percentage)
+end)
 
 -- Percentage input box (right of the slider)
 local percentageEditBox = CreateFrame("EditBox", nil, options, "InputBoxTemplate")
@@ -57,7 +59,6 @@ percentageEditBox:SetWidth(50)
 percentageEditBox:SetHeight(20)
 percentageEditBox:SetPoint("LEFT", percentageSlider, "RIGHT", 10, 0)
 percentageEditBox:SetMaxLetters(3)
-percentageEditBox:SetNumber(AMG_Settings.percentage)
 percentageEditBox:SetNumeric(true)  -- Accept only numeric input
 percentageEditBox:SetScript("OnEnterPressed", function(self)
     self:ClearFocus()  -- Release focus after pressing Enter
@@ -71,9 +72,35 @@ percentageEditBox:SetScript("OnTextChanged", function(self, userInput)
     end
 end)
 
--- Synchronize slider and input box
-percentageSlider:SetScript("OnValueChanged", function(self, value)
-    AMG_Settings.percentage = math.floor(value)
-    _G[self:GetName() .. 'Text']:SetText(AMG_Settings.percentage .. '%')
-    percentageEditBox:SetNumber(AMG_Settings.percentage)
+-- Mail confirmation check button
+local confirmSendCheckButton = CreateFrame("CheckButton", "AMG_ConfirmSendCheckButton", options, "OptionsCheckButtonTemplate")
+confirmSendCheckButton:SetPoint("TOPLEFT", percentageLabel, "BOTTOMLEFT", 0, -32)
+_G[confirmSendCheckButton:GetName() .. "Text"]:SetText("Confirm before sending gold")
+confirmSendCheckButton:SetScript("OnClick", function(self)
+    AMG_Settings.confirmBeforeSending = self:GetChecked()
+end)
+
+-- Function to update the options UI with the saved settings
+local function UpdateOptionsUI()
+    if AMG_Settings then
+        options.recipientEditBox:SetText(AMG_Settings.recipient)
+        percentageSlider:SetValue(AMG_Settings.percentage)
+        percentageEditBox:SetNumber(AMG_Settings.percentage)
+        confirmSendCheckButton:SetChecked(AMG_Settings.confirmBeforeSending or false)
+    end
+end
+
+-- Populate options UI when it's shown
+options:SetScript("OnShow", UpdateOptionsUI)
+
+-- Event handling for updating the options UI on relevant events
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:SetScript("OnEvent", function(self, event, addonName)
+    if event == "ADDON_LOADED" and addonName == "AutoMailGold" then
+        UpdateOptionsUI()
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        UpdateOptionsUI()
+    end
 end)
