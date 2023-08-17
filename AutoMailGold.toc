@@ -1,9 +1,9 @@
 ## Interface: 11304  
 ## Title: AutoMailGold
 ## Author: Srumar
-## Version: 1.0
+## Version: 0.1v
 ## Notes: Automatically mails gold to specified character.
-## SavedVariables: AMG_Settings
+## SavedVariablesPerCharacter: AMG_Settings
 
-AutoMailGold.lua
 AutoMailGoldConfig.lua
+AutoMailGold.lua
